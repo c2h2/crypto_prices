@@ -25,15 +25,28 @@ def get_okcoin_btc():
 def update_price(): 
 	return polo.returnTicker()
 	
+def get_wci():
+	key='pUzGh85jp4fmwVYeLVW0k2bX0'
+	url='https://www.worldcoinindex.com/apiservice/json?key='+key
 
+	http=requests.Session()
+	r = http.get(url)
+	data = simplejson.loads(r.content)
+	mkts = data['Markets']
+	_mkts = {}
+	for i in range(len(mkts)):
+		#print mkts[i]
+		_mkts[mkts[i]['Name']] = mkts[i]
 
-
+	return _mkts
 
 
 def run_sys():
 	ticker = update_price()
 	ok_btc = get_okcoin_btc()
 	ok_eth = get_okcoin_eth()
+	mkts = get_wci()
+
 
 	print "====================================="
 	print "BTCDGB = " + ticker['BTC_DGB']['last']
@@ -48,6 +61,11 @@ def run_sys():
 	print "CNY_ETH = " + ok_eth
 	print "BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc))
 	print "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth))
+	print "WCI_BTC: " + str(mkts["Bitcoin"])
+	print "WCI_ETH: " + str(mkts["Ethereum"])
+	print "WCI_DGB: " + str(mkts["Digibyte"])
+	print "WCI_LSK: " + str(mkts["Lisk"])
+
 
 	#print "RATIO =  " + str(float(usdtbtc) / float(usdteth))
 
