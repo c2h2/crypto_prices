@@ -60,24 +60,27 @@ def run_sys():
 	ok_eth = async_result3.get() 
 	mkts = async_result4.get() 
 
-	print "================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"====================="
-	print "BTCDGB = " + ticker['BTC_DGB']['last']
-	print "BTCLSK = " + ticker['BTC_LSK']['last']
+	output=[]
+
+	output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
+	output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
+	output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
 
 	usdtbtc = ticker['USDT_BTC']['last']   
 	usdteth = ticker['USDT_ETH']['last']
 
-	print "USDT_BTC = " + usdtbtc  
-	print "USDT_ETH = " + usdteth
-	print "CNY_BTC = " + ok_btc
-	print "CNY_ETH = " + ok_eth
-	print "BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc))
-	print "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth))
-	print "WCI_BTC: " + str(mkts["Bitcoin"])
-	print "WCI_ETH: " + str(mkts["Ethereum"])
-	print "WCI_DGB: " + str(mkts["Digibyte"])
-	print "WCI_LSK: " + str(mkts["Lisk"])
+	output.append("USDT_BTC = " + usdtbtc)
+	output.append("USDT_ETH = " + usdteth)
+	output.append("CNY_BTC = " + ok_btc)
+	output.append("CNY_ETH = " + ok_eth)
+	output.append("BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc)))
+	output.append( "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth)))
+	output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
+	output.append("WCI_ETH: " + str(mkts["Ethereum"]))
+	output.append("WCI_DGB: " + str(mkts["Digibyte"]))
+	output.append("WCI_LSK: " + str(mkts["Lisk"]))
 
+	print "\n".join(output)
 
 while(1):
 	run_sys()
