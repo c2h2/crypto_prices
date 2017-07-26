@@ -60,39 +60,41 @@ def get_wci():
 def run_sys():
 	#multithread get data
 	try:
-		ticker = update_price()
-		ok_btc = get_okcoin_btc()
-		ok_eth = get_okcoin_eth() 
-		mkts = get_wci() 
+		with timeout(seconds=5):
+			ticker = update_price()
+			ok_btc = get_okcoin_btc()
+			ok_eth = get_okcoin_eth() 
+			mkts = get_wci() 
 
-		output=[]
+			output=[]
 
-		output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
-		output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
-		output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
+			output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
+			output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
+			output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
 
-		usdtbtc = ticker['USDT_BTC']['last']   
-		usdteth = ticker['USDT_ETH']['last']
+			usdtbtc = ticker['USDT_BTC']['last']   
+			usdteth = ticker['USDT_ETH']['last']
 
-		output.append("USDT_BTC = " + usdtbtc)
-		output.append("USDT_ETH = " + usdteth)
-		output.append("CNY_BTC = " + ok_btc)
-		output.append("CNY_ETH = " + ok_eth)
-		output.append("BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc)))
-		output.append( "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth)))
-		output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
-		output.append("WCI_ETH: " + str(mkts["Ethereum"]))
-		#output.append("WCI_LTC: " + str(mkts["Litecoin"]))
-		output.append("WCI_DSH: " + str(mkts["Dash"]))
-		output.append("WCI_DGB: " + str(mkts["Digibyte"]))
-		output.append("WCI_LSK: " + str(mkts["Lisk"]))
+			output.append("USDT_BTC = " + usdtbtc)
+			output.append("USDT_ETH = " + usdteth)
+			output.append("CNY_BTC = " + ok_btc)
+			output.append("CNY_ETH = " + ok_eth)
+			output.append("BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc)))
+			output.append( "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth)))
+			output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
+			output.append("WCI_ETH: " + str(mkts["Ethereum"]))
+			#output.append("WCI_LTC: " + str(mkts["Litecoin"]))
+			output.append("WCI_DSH: " + str(mkts["Dash"]))
+			output.append("WCI_DGB: " + str(mkts["Digibyte"]))
+			output.append("WCI_LSK: " + str(mkts["Lisk"]))
 
-		lines = "\n".join(output)
-		f = open('../prices.txt', 'w')
-		f.write(lines)
-		print lines
+			lines = "\n".join(output)
+			f = open('../prices.txt', 'w')
+			f.write(lines)
+			print lines
 
 	except:
+		print "Exception Occurred, Retry..."
 		return
 
 
