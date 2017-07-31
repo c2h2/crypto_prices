@@ -2,6 +2,8 @@ import requests
 import simplejson
 import time
 import signal
+import redis
+import json
 from poloniex import Poloniex
 #from multiprocessing.pool import ThreadPool
 
@@ -17,6 +19,11 @@ class timeout:
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
 
+redis_enabled = True
+try:
+	redis = redis.StrictRedis(host='localhost', port=6379, db=0)
+except:
+	redis_enabled = False
 
 polo = Poloniex()
 #pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.6.zip     
@@ -53,14 +60,17 @@ def get_wci():
 	for i in range(len(mkts)):
 		#print mkts[i]
 		_mkts[mkts[i]['Name']] = mkts[i]
-
+  
+	if (redis_enabled):	
+		redis["mkts"]=json.dumps(_mkts)
+	
 	return _mkts
 
 
 def run_sys():
 	#multithread get data
 	try:
-		with timeout(seconds=5):
+		with timeout(seconds=10):
 			ticker = update_price()
 			ok_btc = get_okcoin_btc()
 			ok_eth = get_okcoin_eth() 
