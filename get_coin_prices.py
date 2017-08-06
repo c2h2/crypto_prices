@@ -28,6 +28,17 @@ except:
 polo = Poloniex()
 #pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.6.zip     
 
+def get_jubi_price():
+ 	url='http://www.jubi.com/api/v1/allticker/'
+ 	http=requests.Session()
+ 	r = http.get(url)
+ 	data=simplejson.loads(r.content)
+ 	if(redis_enabled):
+  		redis["jubi_mkts"]=data
+
+  	return data
+
+
 def get_okcoin_eth():
 	url='https://www.okcoin.cn/api/v1/ticker.do?symbol=eth_cny'
 	http=requests.Session()
@@ -70,25 +81,57 @@ def get_wci():
 def run_sys():
 	#multithread get data
 	try:
-		with timeout(seconds=10):
+		with timeout(seconds=15):
 			ticker = update_price()
 			ok_btc = get_okcoin_btc()
 			ok_eth = get_okcoin_eth() 
-			mkts = get_wci() 
-
+			mkts = get_wci()
+			jubi_prices = get_jubi_price()
+			jubi_lsk = jubi_prices["lsk"]
+			jubi_btc = jubi_prices["btc"]
 			output=[]
+			#china price = jubi_lsk
+			#polo price = okcoin/btc * btc/lsk
 
-			output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
-			output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
-			output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
+			jubi_lsk_ls = float(jubi_lsk["last"])
+			jubi_hb = float(jubi_lsk["buy"])
+			jubi_la = float(jubi_lsk["sell"])
+			jubi_spd = (jubi_la/jubi_hb -1.0) * 100.0
+
+			polo_ls = float(ticker['BTC_LSK']['last'])
+			polo_hb = float(ticker['BTC_LSK']['highestBid'])
+			polo_la = float(ticker['BTC_LSK']['lowestAsk'])
+			polo_spd = (polo_la/polo_hb -1.0) * 100.0
+
+			ok_polo_lskrmb = float(ok_btc) * polo_ls
+			jb_polo_lskrmb = float(jubi_btc["last"]) * polo_ls
 
 			usdtbtc = ticker['USDT_BTC']['last']   
 			usdteth = ticker['USDT_ETH']['last']
 
+			lsk_diff_opj = jubi_lsk_ls/ok_polo_lskrmb * 100.0 #ok polo jb
+			lsk_diff_jpj = jubi_lsk_ls/jb_polo_lskrmb * 100.0 #jb polo jb
+
+
+			output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
+			output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
+			output.append("BTCSC  = " + ticker['BTC_SC']['last'])
+			output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
+			
+			output.append("JUBI_LSK = " + str(jubi_lsk["buy"])+", "+str(jubi_lsk["sell"])+ ", spread: "+ str('%.3f' % jubi_spd) +"%")
+			output.append("POLO_LSK = " + str(polo_hb)+", "+str(polo_la) + ", spread: "+ str('%.3f' % polo_spd) +"%")
+			output.append("OK|POLO_LSK/RMB = "+ str(ok_polo_lskrmb))
+			output.append("JB|POLO_LSK/RMB = "+ str(jb_polo_lskrmb))
+			output.append("OK|JUBI_LSK/POLO_LSK = "+ str('%.4f' % lsk_diff_opj)+"%")
+			output.append("JB|JUBI_LSK/POLO_LSK = "+ str('%.4f' % lsk_diff_jpj)+"%")
+			
+
+
 			output.append("USDT_BTC = " + usdtbtc)
 			output.append("USDT_ETH = " + usdteth)
-			output.append("CNY_BTC = " + ok_btc)
-			output.append("CNY_ETH = " + ok_eth)
+			output.append("OK_BTC = " + ok_btc)
+			output.append("JB_BTC = " + str(jubi_btc["last"]))
+			output.append("JB_ETH = " + ok_eth)
 			output.append("BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc)))
 			output.append( "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth)))
 			output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
@@ -103,8 +146,8 @@ def run_sys():
 			f.write(lines)
 			print lines
 
-	except:
-		print "Exception Occurred, Retry..."
+	except Exception,e:
+		print str(e)
 		return
 
 
