@@ -65,7 +65,9 @@ def get_wci():
 
 	http=requests.Session()
 	r = http.get(url)
+	print(r.content)
 	data = simplejson.loads(r.content)
+
 	mkts = data['Markets']
 	_mkts = {}
 	for i in range(len(mkts)):
@@ -85,10 +87,11 @@ def run_sys():
 			ticker = update_price()
 			ok_btc = get_okcoin_btc()
 			ok_eth = get_okcoin_eth() 
-			mkts = get_wci()
+			#mkts = get_wci()
 			jubi_prices = get_jubi_price()
 			jubi_lsk = jubi_prices["lsk"]
 			jubi_btc = jubi_prices["btc"]
+
 			output=[]
 			#china price = jubi_lsk
 			#polo price = okcoin/btc * btc/lsk
@@ -134,12 +137,12 @@ def run_sys():
 			output.append("JB_ETH = " + ok_eth)
 			output.append("BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc)))
 			output.append( "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth)))
-			output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
-			output.append("WCI_ETH: " + str(mkts["Ethereum"]))
+			#output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
+			#output.append("WCI_ETH: " + str(mkts["Ethereum"]))
 			#output.append("WCI_LTC: " + str(mkts["Litecoin"]))
-			output.append("WCI_DSH: " + str(mkts["Dash"]))
-			output.append("WCI_DGB: " + str(mkts["Digibyte"]))
-			output.append("WCI_LSK: " + str(mkts["Lisk"]))
+			#output.append("WCI_DSH: " + str(mkts["Dash"]))
+			#output.append("WCI_DGB: " + str(mkts["Digibyte"]))
+			#output.append("WCI_LSK: " + str(mkts["Lisk"]))
 
 			lines = "\n".join(output)
 			f = open('../prices.txt', 'w')
