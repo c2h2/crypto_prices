@@ -38,6 +38,13 @@ def get_jubi_price():
 
   	return data
 
+def get_bittrex_lsk():
+	url='https://bittrex.com/api/v1.1/public/getmarketsummary?market=btc-lsk'
+	http=requests.Session()
+	r = http.get(url)
+	data = simplejson.loads(r.content)
+
+	return data
 
 def get_okcoin_eth():
 	url='https://www.okcoin.cn/api/v1/ticker.do?symbol=eth_cny'
@@ -86,16 +93,25 @@ def run_sys():
 		with timeout(seconds=19):
 			ticker = update_price()
 			ok_btc = get_okcoin_btc()
-			ok_eth = get_okcoin_eth() 
+			ok_eth = get_okcoin_eth()
 			#mkts = get_wci()
 			jubi_prices = get_jubi_price()
 			jubi_lsk = jubi_prices["lsk"]
 			jubi_btc = jubi_prices["btc"]
 			jubi_eth = jubi_prices["eth"]
 
+			bittrex_price = get_bittrex_lsk()
+			bittrex_ask = float(bittrex_price["result"][0]["Ask"])
+			bittrex_bid = float(bittrex_price["result"][0]["Bid"])
+			bittrex_last= float(bittrex_price["result"][0]["Last"])
+			bittrex_spd = (bittrex_ask/bittrex_bid - 1.0) * 100.0
+			bittrex_vol = float(bittrex_price["result"][0]["Volume"])
+
 			output=[]
 			#china price = jubi_lsk
 			#polo price = okcoin/btc * btc/lsk
+
+			#Bittrex_data{'PrevDay': 0.000721, 'Volume': 3177154.99847553, 'Last': 0.00097501, 'OpenSellOrders': 2950, 'TimeStamp': '2017-08-24T17:54:14.46', 'Bid': 0.00096405, 'Created': '2016-05-24T18:49:52.77', 'OpenBuyOrders': 1691, 'High': 0.00099107, 'MarketName': 'BTC-LSK', 'Low': 0.0007, 'Ask': 0.00097507, 'BaseVolume': 2644.59085876}
 
 			jubi_lsk_ls = float(jubi_lsk["last"])
 			jubi_hb = float(jubi_lsk["buy"])
@@ -105,10 +121,16 @@ def run_sys():
 			polo_ls = float(ticker['BTC_LSK']['last'])
 			polo_hb = float(ticker['BTC_LSK']['highestBid'])
 			polo_la = float(ticker['BTC_LSK']['lowestAsk'])
+			polo_vol = float(ticker['BTC_LSK']['quoteVolume'])
 			polo_spd = (polo_la/polo_hb -1.0) * 100.0
 
 			ok_polo_lskrmb = float(ok_btc) * polo_ls
 			jb_polo_lskrmb = float(jubi_btc["last"]) * polo_ls
+
+			ok_bitx_lskrmb = float(ok_btc) * bittrex_last
+			jb_bitx_lskrmb = float(jubi_btc["last"]) * bittrex_last
+
+			polo_bitx_lsk_diff = (bittrex_last/float(ticker['BTC_LSK']['last'])-1.0)*100.0
 
 			usdtbtc = ticker['USDT_BTC']['last']   
 			usdteth = ticker['USDT_ETH']['last']
@@ -116,22 +138,34 @@ def run_sys():
 			lsk_diff_opj = jubi_lsk_ls/ok_polo_lskrmb * 100.0 #ok polo jb
 			lsk_diff_jpj = jubi_lsk_ls/jb_polo_lskrmb * 100.0 #jb polo jb
 
+			lsk_diff_obj = jubi_lsk_ls / ok_bitx_lskrmb * 100.0 #ok bitx jb
+			lsk_diff_jbj = jubi_lsk_ls / jb_bitx_lskrmb * 100.0 #jb bitx jb
+
+
 			exrate_eth = float(ok_eth) / float(usdteth)
 			exrate_btc = float(ok_btc) / float(usdtbtc)
 
 			output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
 		#	output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
 	#		output.append("BTCSC  = " + ticker['BTC_SC']['last'])
-			output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
-			
+			print ticker['BTC_LSK']
+			output.append("POLO_BTCLSK = " + format(float(ticker['BTC_LSK']['last']), '.8f'))
+			output.append("BITX_BTCLSK = " + format(bittrex_last, '.8f') + ", PB_DIFF = " + str('%.3f' % polo_bitx_lsk_diff) +"%")
 			output.append("JUBI_LSK = " + str(jubi_lsk["buy"])+", "+str(jubi_lsk["sell"])+ ", spread: "+ str('%.3f' % jubi_spd) +"%")
-			output.append("POLO_LSK = " + str(polo_hb)+", "+str(polo_la) + ", spread: "+ str('%.3f' % polo_spd) +"%")
-			output.append("OK|POLO_LSK/RMB = "+ str(ok_polo_lskrmb))
-			output.append("JB|POLO_LSK/RMB = "+ str(jb_polo_lskrmb))
-			output.append("OK|JUBI_LSK/POLO_LSK = "+ str('%.4f' % lsk_diff_opj)+"%")
-			output.append("JB|JUBI_LSK/POLO_LSK = "+ str('%.4f' % lsk_diff_jpj)+"%")
-			
+			output.append("POLO_LSK = " + str(format(polo_hb, '.8f'))    + ", " + str(format(polo_la, '.8f')) + ", spread: "+ str('%.3f' % polo_spd) +"%, vol24hr: "+ str(polo_vol))
+			output.append("BITX_LSK = " + str(format(bittrex_ask, '.8f'))+ ", " + str(format(bittrex_bid, '.8f')) + ", spread: "+ str('%.3f' % bittrex_spd) +"%, vol24hr: "+ str(bittrex_vol))
+			output.append("OK|POLO_LSK/RMB = "+ str('%.3f' % ok_polo_lskrmb))
+			output.append("JB|POLO_LSK/RMB = "+ str('%.3f' % jb_polo_lskrmb))
+			output.append("OK|BITX_LSK/RMB = "+ str('%.3f' % ok_bitx_lskrmb))
+			output.append("JB|BITX_LSK/RMB = "+ str('%.3f' % jb_bitx_lskrmb))
 
+			output.append("OK|JUBI_LSK/POLO_LSK = "+ str('%.2f' % lsk_diff_opj)+"%")
+			output.append("JB|JUBI_LSK/POLO_LSK = "+ str('%.2f' % lsk_diff_jpj)+"%")
+			output.append("OK|JUBI_LSK/BITX_LSK = "+ str('%.2f' % lsk_diff_obj)+"%")
+			output.append("JB|JUBI_LSK/BITX_LSK = "+ str('%.2f' % lsk_diff_jbj)+"%")
+			
+			
+			
 
 			output.append("POLO_USDT_BTC = " + usdtbtc)
 			output.append("POLO_USDT_ETH = " + usdteth)
