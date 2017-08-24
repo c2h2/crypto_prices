@@ -83,7 +83,7 @@ def get_wci():
 def run_sys():
 	#multithread get data
 	try:
-		with timeout(seconds=15):
+		with timeout(seconds=19):
 			ticker = update_price()
 			ok_btc = get_okcoin_btc()
 			ok_eth = get_okcoin_eth() 
@@ -91,6 +91,7 @@ def run_sys():
 			jubi_prices = get_jubi_price()
 			jubi_lsk = jubi_prices["lsk"]
 			jubi_btc = jubi_prices["btc"]
+			jubi_eth = jubi_prices["eth"]
 
 			output=[]
 			#china price = jubi_lsk
@@ -115,10 +116,12 @@ def run_sys():
 			lsk_diff_opj = jubi_lsk_ls/ok_polo_lskrmb * 100.0 #ok polo jb
 			lsk_diff_jpj = jubi_lsk_ls/jb_polo_lskrmb * 100.0 #jb polo jb
 
+			exrate_eth = float(ok_eth) / float(usdteth)
+			exrate_btc = float(ok_btc) / float(usdtbtc)
 
 			output.append("================"+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
-			output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
-			output.append("BTCSC  = " + ticker['BTC_SC']['last'])
+		#	output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
+	#		output.append("BTCSC  = " + ticker['BTC_SC']['last'])
 			output.append("BTCLSK = " + ticker['BTC_LSK']['last'])
 			
 			output.append("JUBI_LSK = " + str(jubi_lsk["buy"])+", "+str(jubi_lsk["sell"])+ ", spread: "+ str('%.3f' % jubi_spd) +"%")
@@ -130,13 +133,14 @@ def run_sys():
 			
 
 
-			output.append("USDT_BTC = " + usdtbtc)
-			output.append("USDT_ETH = " + usdteth)
+			output.append("POLO_USDT_BTC = " + usdtbtc)
+			output.append("POLO_USDT_ETH = " + usdteth)
 			output.append("OK_BTC = " + ok_btc)
+			output.append("OK_ETH = " + ok_eth)
 			output.append("JB_BTC = " + str(jubi_btc["last"]))
-			output.append("JB_ETH = " + ok_eth)
-			output.append("BTC EXCHANGE RATE  = " + str(float(ok_btc) / float(usdtbtc)))
-			output.append( "ETH EXCHANGE RATE  = " + str(float(ok_eth) / float(usdteth)))
+			output.append("JB_ETH = " + str(jubi_eth["last"]))
+			output.append("CALC BTC_USDT/BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_btc)))
+			output.append("CALC ETH_USDT/ETC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_eth)))
 			#output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
 			#output.append("WCI_ETH: " + str(mkts["Ethereum"]))
 			#output.append("WCI_LTC: " + str(mkts["Litecoin"]))
