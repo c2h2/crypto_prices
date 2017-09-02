@@ -168,7 +168,7 @@ def run_sys():
 			output.append(" ")
 			output.append("JUBI_LSK = " + str(jubi_lsk["buy"])+", "+str(jubi_lsk["sell"])+ ", spread: "+ str('%.3f' % jubi_spd) +"%, vol24: $LSK "+str(int(jubi_vol)) )
 			output.append("POLO_LSK = " + str(format(polo_hb, '.8f'))    + ", " + str(format(polo_la, '.8f')) + ", spread: "+ str('%.3f' % polo_spd) +"%, vol24: $LSK "+ str(int(polo_vol)))
-			output.append("BITX_LSK = " + str(format(bittrex_ask, '.8f'))+ ", " + str(format(bittrex_bid, '.8f')) + ", spread: "+ str('%.3f' % bittrex_spd) +"%, vol24: $LSK "+ str(int(bittrex_vol)))
+			output.append("BITX_LSK = " + str(format(bittrex_bid, '.8f'))+ ", " + str(format(bittrex_ask, '.8f')) + ", spread: "+ str('%.3f' % bittrex_spd) +"%, vol24: $LSK "+ str(int(bittrex_vol)))
 			output.append(" ")
 			output.append("OK-POLO_LSK/CNY = "+ str('%.3f' % ok_polo_lskrmb) +", " + str('%.2f' % lsk_diff_opj)+"%  | JB-POLO_LSK/CNY = "+ str('%.3f' % jb_polo_lskrmb)+ ", " + str('%.2f' % lsk_diff_jpj)+"%")
 			output.append("OK-BITX_LSK/CNY = "+ str('%.3f' % ok_bitx_lskrmb) +", " + str('%.2f' % lsk_diff_obj)+"%  | JB-BITX_LSK/CNY = "+ str('%.3f' % jb_bitx_lskrmb)+ ", " + str('%.2f' % lsk_diff_jbj)+"%")
