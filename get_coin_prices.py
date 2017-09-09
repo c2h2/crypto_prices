@@ -1,4 +1,5 @@
 import requests
+import urllib2
 import simplejson
 import time
 import signal
@@ -6,6 +7,8 @@ import redis
 import json
 from poloniex import Poloniex
 #from multiprocessing.pool import ThreadPool
+
+#python2
 
 class timeout:
     def __init__(self, seconds=1, error_message='Timeout'):
@@ -19,7 +22,7 @@ class timeout:
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
 
-redis_enabled = True
+redis_enabled = False
 try:
 	redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 except:
@@ -95,6 +98,13 @@ def get_wci():
 	
 	return _mkts
 
+def get_acx():
+	url='https://acx.io/api/v2/tickers.json'	
+	http=requests.Session()
+	r = http.get(url)
+
+	data = simplejson.loads(r.content)
+	return data
 
 def run_sys():
 	#multithread get data
@@ -103,6 +113,7 @@ def run_sys():
 			ticker = update_price()
 			ok_btc = get_okcoin_btc()
 			ok_eth = get_okcoin_eth()
+			acx_hash = get_acx()
 			#mkts = get_wci()
 			jubi_prices = get_jubi_price()
 			jubi_lsk = jubi_prices["lsk"]
@@ -159,7 +170,15 @@ def run_sys():
 			exrate_eth = float(ok_eth) / float(usdteth)
 			exrate_btc = float(ok_btc) / float(usdtbtc)
 
-			output.append("================ Server Time: "+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+"=====================")
+			acx_btc_aud_hb = float(acx_hash['btcaud']['ticker']['buy'])
+			acx_btc_aud_ls = float(acx_hash['btcaud']['ticker']['last'])
+			acx_btc_aud_la = float(acx_hash['btcaud']['ticker']['sell'])
+
+			exrate_aud_cny_btc = float(ok_btc) / float(acx_btc_aud_ls)
+			exrate_aud_usd_btc = float(usdtbtc) / float(acx_btc_aud_ls)
+			
+
+			output.append("================ UTC Ticker Time: "+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+" | SRC: Poloniex, Bittrex, jubi.com, acx.io =====================")
 		#	output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
 	#		output.append("BTCSC  = " + ticker['BTC_SC']['last'])
 			output.append("POLO_LAST = " + format(float(ticker['BTC_LSK']['last']), '.8f') + ", $"+format(polo_lsk_usd, ".3f") +", BP_DIFF = "+str('%.3f' % -polo_bitx_lsk_diff) +"%")
@@ -179,8 +198,11 @@ def run_sys():
 			output.append("POLO_USDT_ETH = " + str('%.2f' % float(usdteth)))
 			output.append("OK_BTC = " + str(format(float(ok_btc),'.1f')) + " | OK_ETH = " + str(format(float(ok_eth),'.1f')))
 			output.append("JB_BTC = " + str(format(float(jubi_btc["last"]),'.1f')) + " | JB_ETH = " + str(format(float(jubi_eth["last"]),'.1f')))
+			output.append("AC_BTC = " + str(format(acx_btc_aud_ls,".1f"))) 
 			output.append("CALC BTC_USDT/BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_btc)))
 			output.append("CALC ETH_USDT/ETC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_eth)))
+			output.append("CALC BTC_AUD /BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_aud_cny_btc)))
+			output.append("CALC ETH_AUD /BTC_USD EXCHANGE RATE  = " + str(str('%.3f' % exrate_aud_usd_btc)))
 			#output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
 			#output.append("WCI_ETH: " + str(mkts["Ethereum"]))
 			#output.append("WCI_LTC: " + str(mkts["Litecoin"]))
