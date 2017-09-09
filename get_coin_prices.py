@@ -57,6 +57,13 @@ def get_bittrex_btc():
 
 	return data
 
+def get_bittrex_eth():
+	url='https://bittrex.com/api/v1.1/public/getmarketsummary?market=usdt-eth'
+	http=requests.Session()
+	r = http.get(url)
+	data = simplejson.loads(r.content)
+
+	return data
 
 def get_okcoin_eth():
 	url='https://www.okcoin.cn/api/v1/ticker.do?symbol=eth_cny'
@@ -114,20 +121,24 @@ def run_sys():
 			ok_btc = get_okcoin_btc()
 			ok_eth = get_okcoin_eth()
 			acx_hash = get_acx()
+
+			bittrex_price = get_bittrex_lsk()
+			bittrex_btc_price = get_bittrex_btc()
+			bittrex_eth_price = get_bittrex_eth()
 			#mkts = get_wci()
 			jubi_prices = get_jubi_price()
 			jubi_lsk = jubi_prices["lsk"]
 			jubi_btc = jubi_prices["btc"]
 			jubi_eth = jubi_prices["eth"]
 
-			bittrex_price = get_bittrex_lsk()
-			bittrex_btc_price = get_bittrex_btc()
 			bittrex_ask = float(bittrex_price["result"][0]["Ask"])
 			bittrex_bid = float(bittrex_price["result"][0]["Bid"])
 			bittrex_last= float(bittrex_price["result"][0]["Last"])
 			bittrex_spd = (bittrex_ask/bittrex_bid - 1.0) * 100.0
 			bittrex_vol = float(bittrex_price["result"][0]["Volume"])
 			bittrex_usdt = float(bittrex_btc_price["result"][0]["Last"])
+
+			bittrex_eth_usdt = float(bittrex_eth_price["result"][0]["Last"])
 
 			output=[]
 			#china price = jubi_lsk
@@ -194,8 +205,9 @@ def run_sys():
 			output.append(" ")
 			output.append("----------------  BTC & ETH  ------------------")
 			
-			output.append("POLO_USDT_BTC = " + str('%.2f' % float(usdtbtc)))
-			output.append("POLO_USDT_ETH = " + str('%.2f' % float(usdteth)))
+
+			output.append("POLO_BTC_USDT = " + str('%.2f' % float(usdtbtc)) + " | BITX_BTC_USDT = " + str('%.2f' % float(bittrex_usdt)))
+			output.append("POLO_ETH_USDT = " + str('%.2f' % float(usdteth)) + "  | BITX_ETH_USDT = " + str('%.2f' % float(bittrex_eth_usdt)))
 			output.append("OK_BTC = " + str(format(float(ok_btc),'.1f')) + " | OK_ETH = " + str(format(float(ok_eth),'.1f')))
 			output.append("JB_BTC = " + str(format(float(jubi_btc["last"]),'.1f')) + " | JB_ETH = " + str(format(float(jubi_eth["last"]),'.1f')))
 			output.append("AC_BTC = " + str(format(acx_btc_aud_ls,".1f"))) 
@@ -223,4 +235,4 @@ def run_sys():
 
 while(1):
 	run_sys()
-	time.sleep(1)
+	time.sleep(0.5)
