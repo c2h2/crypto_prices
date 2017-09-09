@@ -202,7 +202,7 @@ def run_sys():
 			output.append("CALC BTC_USDT/BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_btc)))
 			output.append("CALC ETH_USDT/ETC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_eth)))
 			output.append("CALC BTC_AUD /BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_aud_cny_btc)))
-			output.append("CALC ETH_AUD /BTC_USD EXCHANGE RATE  = " + str(str('%.3f' % exrate_aud_usd_btc)))
+			output.append("CALC BTC_AUD /BTC_USD EXCHANGE RATE  = " + str(str('%.3f' % exrate_aud_usd_btc)))
 			#output.append("WCI_BTC: " + str(mkts["Bitcoin"]))
 			#output.append("WCI_ETH: " + str(mkts["Ethereum"]))
 			#output.append("WCI_LTC: " + str(mkts["Litecoin"]))
