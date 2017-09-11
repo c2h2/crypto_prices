@@ -1,5 +1,4 @@
 import requests
-import urllib2
 import simplejson
 import time
 import signal
@@ -81,6 +80,14 @@ def get_okcoin_btc():
 
 	return data['ticker']['last']
 
+def get_bitfinex_btc():
+	url='https://api.bitfinex.com/v1/pubticker/btcusd'
+	http=requests.Session()
+	r = http.get(url)
+	data = simplejson.loads(r.content)
+
+	return data['last_price']
+
 
 def update_price(): 
 	return polo.returnTicker()
@@ -126,6 +133,9 @@ def run_sys():
 			bittrex_btc_price = get_bittrex_btc()
 			bittrex_eth_price = get_bittrex_eth()
 			#mkts = get_wci()
+
+ 			bitf_btc_usd = float(get_bitfinex_btc())
+
 			jubi_prices = get_jubi_price()
 			jubi_lsk = jubi_prices["lsk"]
 			jubi_btc = jubi_prices["btc"]
@@ -178,6 +188,7 @@ def run_sys():
 			polo_lsk_usd = float(ticker['BTC_LSK']['last']) * float(usdtbtc)
  			bitx_lsk_usd = float(bittrex_last) * float(bittrex_usdt)
 
+
 			exrate_eth = float(ok_eth) / float(usdteth)
 			exrate_btc = float(ok_btc) / float(usdtbtc)
 
@@ -189,7 +200,7 @@ def run_sys():
 			exrate_aud_usd_btc = float(usdtbtc) / float(acx_btc_aud_ls)
 			
 
-			output.append("================ UTC Ticker Time: "+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+" | SRC: Poloniex, Bittrex, jubi.com, acx.io =====================")
+			output.append("================ UTC Ticker Time: "+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+" | SRC: Poloniex, Bittrex, jubi.com, Bitfinex, acx.io =====================")
 		#	output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
 	#		output.append("BTCSC  = " + ticker['BTC_SC']['last'])
 			output.append("POLO_LAST = " + format(float(ticker['BTC_LSK']['last']), '.8f') + ", $"+format(polo_lsk_usd, ".3f") +", BP_DIFF = "+str('%.3f' % -polo_bitx_lsk_diff) +"%")
@@ -206,8 +217,10 @@ def run_sys():
 			output.append("----------------  BTC & ETH  ------------------")
 			
 
-			output.append("POLO_BTC_USDT = " + str('%.2f' % float(usdtbtc)) + " | BITX_BTC_USDT = " + str('%.2f' % float(bittrex_usdt)))
+			output.append("POLO_BTC_USDT = " + str('%.2f' % float(usdtbtc)) + " | BITX_BTC_USDT = " + str('%.2f' % float(bittrex_usdt)) + " | BITF_BTC_USD = " + str('%.2f' % float(bitf_btc_usd)))
 			output.append("POLO_ETH_USDT = " + str('%.2f' % float(usdteth)) + "  | BITX_ETH_USDT = " + str('%.2f' % float(bittrex_eth_usdt)))
+
+
 			output.append("OK_BTC = " + str(format(float(ok_btc),'.1f')) + " | OK_ETH = " + str(format(float(ok_eth),'.1f')))
 			output.append("JB_BTC = " + str(format(float(jubi_btc["last"]),'.1f')) + " | JB_ETH = " + str(format(float(jubi_eth["last"]),'.1f')))
 			output.append("AC_BTC = " + str(format(acx_btc_aud_ls,".1f"))) 
