@@ -1,3 +1,4 @@
+from crypto_price_db import *
 import requests
 import simplejson
 import time
@@ -140,6 +141,8 @@ def run_sys():
 			jubi_lsk = jubi_prices["lsk"]
 			jubi_btc = jubi_prices["btc"]
 			jubi_eth = jubi_prices["eth"]
+			
+
 
 			bittrex_ask = float(bittrex_price["result"][0]["Ask"])
 			bittrex_bid = float(bittrex_price["result"][0]["Bid"])
@@ -161,6 +164,8 @@ def run_sys():
 			jubi_la = float(jubi_lsk["sell"])
 			jubi_vol = float(jubi_lsk["vol"])
 			jubi_spd = (jubi_la/jubi_hb -1.0) * 100.0
+			p=Prices(ticker_name="jubi_lsk_cny", price=jubi_lsk_ls, created_at=datetime.datetime.now())
+			commit()
 
 			polo_ls = float(ticker['BTC_LSK']['last'])
 			polo_hb = float(ticker['BTC_LSK']['highestBid'])
@@ -244,8 +249,12 @@ def run_sys():
 		print str(e)
 		return
 
+@db_session
+def main():
 
+	while(1):
+		run_sys()
+		time.sleep(0.5)
 
-while(1):
-	run_sys()
-	time.sleep(0.5)
+db.generate_mapping(create_tables=True) 
+main()
