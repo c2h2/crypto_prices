@@ -31,103 +31,109 @@ except:
 polo = Poloniex()
 #pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.6.zip     
 
-
-def get_jubi_price():
-    url='http://www.jubi.com/api/v1/allticker/'
-    http=requests.Session()
-    r = http.get(url)
-    data=simplejson.loads(r.content)
-    if(redis_enabled):
-        redis["jubi_mkts"]=data
-
-    return data
+DFT_SLEEP_TIME=0.2
+DFT_HTTP_CONN_TIME=10
+real_mkts_raw_data={}
 
 
-def get_bittrex_lsk():
-    url='https://bittrex.com/api/v1.1/public/getmarketsummary?market=btc-lsk'
-    http=requests.Session()
-    r = http.get(url)
-    data = simplejson.loads(r.content)
+class CryptoPrice:
+    def __init__(self):
+        real_mkts_raw_data["jubi"] = {}
+        real_mkts_raw_data["bitx"] = {}
+        real_mkts_raw_data["okcn"] = {}
+        real_mkts_raw_data["polo"] = {}
+        real_mkts_raw_data["bitf"] = {}
+        pass
 
-    return data
-
-
-def get_bittrex_btc():
-    url='https://bittrex.com/api/v1.1/public/getmarketsummary?market=usdt-btc'
-    http=requests.Session()
-    r = http.get(url)
-    data = simplejson.loads(r.content)
-
-    return data
-
-
-def get_bittrex_eth():
-    url='https://bittrex.com/api/v1.1/public/getmarketsummary?market=usdt-eth'
-    http=requests.Session()
-    r = http.get(url)
-    data = simplejson.loads(r.content)
-
-    return data
+    def get_jubi_price(self):
+        url='http://www.jubi.com/api/v1/allticker/'
+        http=requests.Session()
+        while(True):
+            try:
+                with timeout(seconds=DFT_HTTP_CONN_TIME):
+                    data = simplejson.loads(http.get(url).content)
+                    real_mkts_raw_data["jubi"]=data
+                    real_mkts_raw_data["jubi"]["created_at"]=datetime.datetime.now()
+                    time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
 
 
-def get_okcoin_eth():
-    url='https://www.okcoin.cn/api/v1/ticker.do?symbol=eth_cny'
-    http=requests.Session()
-    r = http.get(url)
-    data = simplejson.loads(r.content)
+    def get_bittrex(self):
+        url0='https://bittrex.com/api/v1.1/public/getmarketsummary?market=btc-lsk'
+        url1='https://bittrex.com/api/v1.1/public/getmarketsummary?market=usdt-btc'
+        url2='https://bittrex.com/api/v1.1/public/getmarketsummary?market=usdt-eth'
+        http = requests.Session()
+        while (True):
+            try:
+                with timeout(seconds=DFT_HTTP_CONN_TIME):
+                    real_mkts_raw_data["bitx"]["btc_lsk"] = simplejson.loads(http.get(url0).content)
+                    real_mkts_raw_data["bitx"]["btc_usdt"] = simplejson.loads(http.get(url1).content)
+                    real_mkts_raw_data["bitx"]["eth_usdt"] = simplejson.loads(http.get(url2).content)
+                    real_mkts_raw_data["bitx"]["created_at"] = datetime.datetime.now()
+                    time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
 
-    return data['ticker']['last']
+    def get_okcoin(self):
+        url0 = 'https://www.okcoin.cn/api/v1/ticker.do?symbol=btc_cny'
+        url1 = 'https://www.okcoin.cn/api/v1/ticker.do?symbol=eth_cny'
+        url2 = 'https://www.okcoin.cn/api/v1/ticker.do?symbol=etc_cny'
+        http = requests.Session()
+        while (True):
+            try:
+                with timeout(seconds=DFT_HTTP_CONN_TIME):
+                    real_mkts_raw_data["okcn"]["btc_cny"] = simplejson.loads(http.get(url0).content)
+                    real_mkts_raw_data["okcn"]["eth_cny"] = simplejson.loads(http.get(url1).content)
+                    real_mkts_raw_data["okcn"]["etc_cny"] = simplejson.loads(http.get(url2).content)
+                    real_mkts_raw_data["okcn"]["created_at"] = datetime.datetime.now()
+                    time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
 
-def get_okcoin_btc():
-    url='https://www.okcoin.cn/api/v1/ticker.do?symbol=btc_cny'
-    http=requests.Session()
-    r = http.get(url)
-    data = simplejson.loads(r.content)
-
-    return data['ticker']['last']
-
-
-def get_bitfinex_btc():
-    url='https://api.bitfinex.com/v1/pubticker/btcusd'
-    http=requests.Session()
-    r = http.get(url)
-    data = simplejson.loads(r.content)
-
-    return data['last_price']
-
-
-def update_price(): 
-    return polo.returnTicker()
-
-
-def get_wci():
-    key='pUzGh85jp4fmwVYeLVW0k2bX0'
-    url='https://www.worldcoinindex.com/apiservice/json?key='+key
-
-    http=requests.Session()
-    r = http.get(url)
-    print(r.content)
-    data = simplejson.loads(r.content)
-
-    mkts = data['Markets']
-    _mkts = {}
-    for i in range(len(mkts)):
-        #print mkts[i]
-        _mkts[mkts[i]['Name']] = mkts[i]
-  
-    if (redis_enabled):    
-        redis["mkts"]=json.dumps(_mkts)
-    
-    return _mkts
+    def get_acx(self):
+        url0 = 'https://acx.io/api/v2/tickers.json'
+        http = requests.Session()
+        while (True):
+            try:
+                with timeout(seconds=DFT_HTTP_CONN_TIME):
+                    real_mkts_raw_data["acxi"] = simplejson.loads(http.get(url0).content)
+                    real_mkts_raw_data["acxi"]["created_at"] = datetime.datetime.now()
+                    time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
 
 
-def get_acx():
-    url='https://acx.io/api/v2/tickers.json'    
-    http=requests.Session()
-    r = http.get(url)
+    def get_bitfinex(self):
+        url0 = 'https://api.bitfinex.com/v1/pubticker/btcusd'
+        url1 = 'https://api.bitfinex.com/v1/pubticker/ethusd'
+        http = requests.Session()
+        while (True):
+            try:
+                with timeout(seconds=DFT_HTTP_CONN_TIME):
+                    real_mkts_raw_data["bitf"]["btc_usd"] = simplejson.loads(http.get(url0).content)
+                    real_mkts_raw_data["bitf"]["eth_usd"] =  simplejson.loads(http.get(url1).content)
+                    real_mkts_raw_data["bitf"]["created_at"] = datetime.datetime.now()
+                    time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
 
-    data = simplejson.loads(r.content)
-    return data
+
+    def get_polo(self):
+        while (True):
+            try:
+                with timeout(seconds=DFT_HTTP_CONN_TIME):
+                    real_mkts_raw_data["polo"] = polo.returnTicker()
+                    real_mkts_raw_data["polo"]["created_at"] = datetime.datetime.now()
+                    time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+    def process_raw_data(self):
+        pass
+
+    def output_txt(self):
+        pass
 
 
 def run_sys():
@@ -265,5 +271,7 @@ def main():
         run_sys()
         time.sleep(0.5)
 
-db.generate_mapping(create_tables=True) 
-main()
+#db.generate_mapping(create_tables=True)
+#main()
+
+pf=CryptoPrice()
