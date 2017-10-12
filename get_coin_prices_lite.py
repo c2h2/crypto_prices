@@ -5,9 +5,22 @@ import signal
 import redis
 import json
 from poloniex import Poloniex
+import linecache
+import sys
 #from multiprocessing.pool import ThreadPool
 
 #python2
+
+
+def PrintException():
+    exc_type, exc_obj, tb = sys.exc_info()
+    f = tb.tb_frame
+    lineno = tb.tb_lineno
+    filename = f.f_code.co_filename
+    linecache.checkcache(filename)
+    line = linecache.getline(filename, lineno, f.f_globals)
+    print 'EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj)
+
 
 class timeout:
     def __init__(self, seconds=1, error_message='Timeout'):
@@ -120,8 +133,18 @@ def get_acx():
 	data = simplejson.loads(r.content)
 	return data
 
+def get_fiat():
+	url='http://api.fixer.io/latest?base=USD'
+	http=requests.Session()
+	r = http.get(url)
+
+	data = simplejson.loads(r.content)
+	return data
+
+
 def run_sys():
 	#multithread get data
+	cnt=0
 	try:
 		with timeout(seconds=19):
 			ticker = update_price()
@@ -135,6 +158,12 @@ def run_sys():
 			#mkts = get_wci()
 
  			bitf_btc_usd = float(get_bitfinex_btc())
+
+			if(cnt%100==0):
+				fiat=get_fiat()
+				usd_cny = float(fiat["rates"]["CNY"])
+				aud_usd = 1/float(fiat["rates"]["AUD"])
+				cnt = cnt + 1
 
 			#jubi_prices = get_jubi_price()
 			#jubi_lsk = jubi_prices["lsk"]
@@ -203,8 +232,10 @@ def run_sys():
 			output.append("================ UTC Ticker Time: "+ str( time.strftime("%Y-%m-%d %H:%M:%S") )+" | SRC: Poloniex, Bittrex, Bitfinex, acx.io =====================")
 		#	output.append("BTCDGB = " + ticker['BTC_DGB']['last'])
 	#		output.append("BTCSC  = " + ticker['BTC_SC']['last'])
-			output.append("POLO_LAST = " + format(float(ticker['BTC_LSK']['last']), '.8f') + ", $"+format(polo_lsk_usd, ".3f") +", BP_DIFF = "+str('%.3f' % -polo_bitx_lsk_diff) +"%")
-			output.append("BITX_LAST = " + format(bittrex_last, '.8f') + ", $"+format(bitx_lsk_usd, ".3f") + ", PB_DIFF = " + str('%.3f' % polo_bitx_lsk_diff) +"%")
+			output.append("FOREX: USD_CNY = " + str(format(usd_cny,'.4f')) + ", AUD_USD = " + str(format(aud_usd,'.4f')))
+			output.append(" ")
+			output.append("POLO_LAST = " + format(float(ticker['BTC_LSK']['last']), '.8f') + ", $"+format(polo_lsk_usd, ".3f") + ", CNY " + format(polo_lsk_usd*usd_cny, ".2f") +", BP_DIFF = "+str('%.3f' % -polo_bitx_lsk_diff) +"%")
+			output.append("BITX_LAST = " + format(bittrex_last, '.8f') + ", $"+format(bitx_lsk_usd, ".3f") + ", CNY " + format(bitx_lsk_usd*usd_cny, ".2f")+", PB_DIFF = " + str('%.3f' % polo_bitx_lsk_diff) +"%")
 			#output.append("JUBI_LAST = CNY " + format(float(jubi_lsk["last"]),'.2f'))
 			#output.append(" ")
 			#output.append("JUBI_LSK = " + str(jubi_lsk["buy"])+", "+str(jubi_lsk["sell"])+ ", spread: "+ str('%.3f' % jubi_spd) +"%, vol24: $LSK "+str(int(jubi_vol)) )
@@ -219,11 +250,13 @@ def run_sys():
 
 			output.append("POLO_BTC_USDT = " + str('%.2f' % float(usdtbtc)) + " | BITX_BTC_USDT = " + str('%.2f' % float(bittrex_usdt)) + " | BITF_BTC_USD = " + str('%.2f' % float(bitf_btc_usd)))
 			output.append("POLO_ETH_USDT = " + str('%.2f' % float(usdteth)) + "  | BITX_ETH_USDT = " + str('%.2f' % float(bittrex_eth_usdt)))
-
+			output.append("AC_BTC = " + str(format(acx_btc_aud_ls,".1f")))
+			output.append(" ")
+			output.append("CALC POLO_BTC_CNY = "+ str(format(float(usdtbtc)*usd_cny, ".2f")) + ", POLO_ETH_CNY = "+str(format(float(usdteth)*usd_cny, ".2f")) )
 
 		#	output.append("OK_BTC = " + str(format(float(ok_btc),'.1f')) + " | OK_ETH = " + str(format(float(ok_eth),'.1f')))
 		#	output.append("JB_BTC = " + str(format(float(jubi_btc["last"]),'.1f')) + " | JB_ETH = " + str(format(float(jubi_eth["last"]),'.1f')))
-			output.append("AC_BTC = " + str(format(acx_btc_aud_ls,".1f"))) 
+
 		#	output.append("CALC BTC_USDT/BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_btc)))
 	#		output.append("CALC ETH_USDT/ETC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_eth)))
 	#		output.append("CALC BTC_AUD /BTC_CNY EXCHANGE RATE  = " + str(str('%.3f' % exrate_aud_cny_btc)))
@@ -236,13 +269,12 @@ def run_sys():
 			#output.append("WCI_LSK: " + str(mkts["Lisk"]))
 
 			lines = "\n".join(output)
-                        print("W")
 			f = open('../prices.txt', 'w')
 			f.write(lines)
 			print lines
 
 	except Exception,e:
-		print str(e)
+		PrintException()
 		return
 
 
