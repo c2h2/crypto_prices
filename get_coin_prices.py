@@ -12,9 +12,7 @@ from bson import json_util #need bson and pymongo
 #from multiprocessing.pool import ThreadPool
 
 
-
 #python2
-
 class timeout:
     def __init__(self, seconds=1, error_message='Timeout'):
         self.seconds = seconds
@@ -136,10 +134,11 @@ class CryptoPrice:
         pass
 
     def print_mkt(self):
-        f=open('../prices_json.txt', 'w')
         while(True):
             print str(real_mkts_raw_data)
+            f=open('../prices_json.txt', 'w')
             f.write(json.dumps(real_mkts_raw_data, default=json_util.default))
+            f.close()
             time.sleep(1)
 
     def multithread_update_prices(self):
@@ -286,6 +285,7 @@ def run_sys():
             lines = "\n".join(output)
             f = open('../prices.txt', 'w')
             f.write(lines)
+            f.close()
             print lines
 
     except Exception,e:
