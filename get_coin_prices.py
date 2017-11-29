@@ -127,6 +127,18 @@ class CryptoPrice:
             except Exception, e:
                 print str(e)
 
+    def get_bithumb(self):
+        url0 = 'https://api.bithumb.com/public/ticker/ALL'
+        http = requests.Session()
+        while (True):
+            try:
+                real_mkts_raw_data["bith"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
+                real_mkts_raw_data["bith"]["created_at"] = datetime.now()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+
     def process_raw_data(self):
         pass
 
@@ -148,6 +160,7 @@ class CryptoPrice:
         threads.append(threading.Thread(target=self.get_okcoin))
         threads.append(threading.Thread(target=self.get_acx))
         threads.append(threading.Thread(target=self.get_polo))
+        threads.append(threading.Thread(target=self.get_bithumb))
         threads.append(threading.Thread(target=self.print_mkt))
 
         for t in threads:
