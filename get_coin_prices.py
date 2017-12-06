@@ -117,7 +117,7 @@ class CryptoPrice:
                 real_mkts_raw_data["bitf"]["btc_usd"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["bitf"]["eth_usd"] =  simplejson.loads(http.get(url1,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["bitf"]["created_at"] = datetime.now()
-                time.sleep(DFT_SLEEP_TIME)
+                time.sleep(DFT_SLEEP_TIME+1)
             except Exception, e:
                 print str(e)
 
@@ -144,6 +144,7 @@ class CryptoPrice:
 
     def get_binance(self):
         url0= 'https://api.binance.com/api/v1/ticker/allPrices'
+        url1= 'https://api.binance.com/api/v1/ticker/24hr?symbol=LSKBTC'
         http = requests.Session()
         while (True):
             try:
@@ -153,7 +154,9 @@ class CryptoPrice:
                 for i in range(len(temp_data_array)):
                     temp_hash[temp_data_array[i]["symbol"]]=temp_data_array[i]["price"]
 
+                lsk_vol = simplejson.loads(http.get(url1,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["bina"] = temp_hash
+                real_mkts_raw_data["bina"]["LSKBTC_VOL"] = lsk_vol
                 real_mkts_raw_data["bina"]["created_at"] = datetime.now()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception as e:
