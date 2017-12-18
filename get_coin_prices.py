@@ -1,16 +1,20 @@
-from crypto_price_db import *
+#from crypto_price_db import * #disable db recording.
 import requests
 import simplejson
 import time
 import signal
 import redis
 import json
+import sys
+import os
+from datetime import datetime
 from poloniex import Poloniex
-#from multiprocessing.pool import ThreadPool
 import threading
+from bson import json_util #need bson and pymongo
+#from multiprocessing.pool import ThreadPool
+
 
 #python2
-
 class timeout:
     def __init__(self, seconds=1, error_message='Timeout'):
         self.seconds = seconds
@@ -44,6 +48,8 @@ class CryptoPrice:
         real_mkts_raw_data["okcn"] = {}
         real_mkts_raw_data["polo"] = {}
         real_mkts_raw_data["bitf"] = {}
+        real_mkts_raw_data["bith"] = {}
+        real_mkts_raw_data["bina"] = {}
         pass
 
     def get_jubi(self):
@@ -54,7 +60,7 @@ class CryptoPrice:
                 #with timeout(seconds=DFT_HTTP_CONN_TIME):
                 data = simplejson.loads(http.get(url,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["jubi"]=data
-                real_mkts_raw_data["jubi"]["created_at"]=datetime.datetime.now()
+                real_mkts_raw_data["jubi"]["created_at"]=datetime.now()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception, e:
                 print str(e)
@@ -70,7 +76,7 @@ class CryptoPrice:
                 real_mkts_raw_data["bitx"]["btc_lsk"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["bitx"]["btc_usdt"] = simplejson.loads(http.get(url1,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["bitx"]["eth_usdt"] = simplejson.loads(http.get(url2,timeout=DFT_HTTP_CONN_TIME).content)
-                real_mkts_raw_data["bitx"]["created_at"] = datetime.datetime.now()
+                real_mkts_raw_data["bitx"]["created_at"] = datetime.now()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception, e:
                 print str(e)
@@ -85,7 +91,7 @@ class CryptoPrice:
                 real_mkts_raw_data["okcn"]["btc_cny"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["okcn"]["eth_cny"] = simplejson.loads(http.get(url1,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["okcn"]["etc_cny"] = simplejson.loads(http.get(url2,timeout=DFT_HTTP_CONN_TIME).content)
-                real_mkts_raw_data["okcn"]["created_at"] = datetime.datetime.now()
+                real_mkts_raw_data["okcn"]["created_at"] = datetime.now()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception, e:
                 print str(e)
@@ -96,7 +102,7 @@ class CryptoPrice:
         while (True):
             try:
                 real_mkts_raw_data["acxi"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
-                real_mkts_raw_data["acxi"]["created_at"] = datetime.datetime.now()
+                real_mkts_raw_data["acxi"]["created_at"] = datetime.now()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception, e:
                 print str(e)
@@ -110,8 +116,8 @@ class CryptoPrice:
             try:
                 real_mkts_raw_data["bitf"]["btc_usd"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
                 real_mkts_raw_data["bitf"]["eth_usd"] =  simplejson.loads(http.get(url1,timeout=DFT_HTTP_CONN_TIME).content)
-                real_mkts_raw_data["bitf"]["created_at"] = datetime.datetime.now()
-                time.sleep(DFT_SLEEP_TIME)
+                real_mkts_raw_data["bitf"]["created_at"] = datetime.now()
+                time.sleep(DFT_SLEEP_TIME+1)
             except Exception, e:
                 print str(e)
 
@@ -120,10 +126,45 @@ class CryptoPrice:
         while (True):
             try:
                 real_mkts_raw_data["polo"] = polo.returnTicker()
-                real_mkts_raw_data["polo"]["created_at"] = datetime.datetime.now()
+                real_mkts_raw_data["polo"]["created_at"] = datetime.now()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception, e:
                 print str(e)
+
+    def get_bithumb(self):
+        url0 = 'https://api.bithumb.com/public/ticker/ALL'
+        http = requests.Session()
+        while (True):
+            try:
+                real_mkts_raw_data["bith"] = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
+                real_mkts_raw_data["bith"]["created_at"] = datetime.now()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+    def get_binance(self):
+        url0= 'https://api.binance.com/api/v1/ticker/allPrices'
+        url1= 'https://api.binance.com/api/v1/ticker/24hr?symbol=LSKBTC'
+        http = requests.Session()
+        while (True):
+            try:
+                temp_data_array = simplejson.loads(http.get(url0,timeout=DFT_HTTP_CONN_TIME).content)
+                temp_hash = {}
+                i=0
+                for i in range(len(temp_data_array)):
+                    temp_hash[temp_data_array[i]["symbol"]]=temp_data_array[i]["price"]
+
+                lsk_vol = simplejson.loads(http.get(url1,timeout=DFT_HTTP_CONN_TIME).content)
+                real_mkts_raw_data["bina"] = temp_hash
+                real_mkts_raw_data["bina"]["LSKBTC_VOL"] = lsk_vol
+                real_mkts_raw_data["bina"]["created_at"] = datetime.now()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception as e:
+               exc_type, exc_obj, exc_tb = sys.exc_info()
+               fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+               print(exc_type, fname, exc_tb.tb_lineno)
+        
+
 
     def process_raw_data(self):
         pass
@@ -134,6 +175,9 @@ class CryptoPrice:
     def print_mkt(self):
         while(True):
             print str(real_mkts_raw_data)
+            f=open('../prices_json.txt', 'w')
+            f.write(json.dumps(real_mkts_raw_data, default=json_util.default))
+            f.close()
             time.sleep(1)
 
     def multithread_update_prices(self):
@@ -143,11 +187,18 @@ class CryptoPrice:
         threads.append(threading.Thread(target=self.get_okcoin))
         threads.append(threading.Thread(target=self.get_acx))
         threads.append(threading.Thread(target=self.get_polo))
+        threads.append(threading.Thread(target=self.get_bitfinex))
+        threads.append(threading.Thread(target=self.get_bithumb))
+        threads.append(threading.Thread(target=self.get_binance))
         threads.append(threading.Thread(target=self.print_mkt))
 
         for t in threads:
             t.daemon=True
             t.start()
+
+        #keep main thread live
+        while True: 
+            time.sleep(1)
 
         for t in threads:
             t.join()
@@ -197,7 +248,7 @@ def run_sys():
             jubi_la = float(jubi_lsk["sell"])
             jubi_vol = float(jubi_lsk["vol"])
             jubi_spd = (jubi_la/jubi_hb -1.0) * 100.0
-            p=Prices(ticker_name="jubi_lsk_cny", price=jubi_lsk_ls, created_at=datetime.datetime.now())
+            p=Prices(ticker_name="jubi_lsk_cny", price=jubi_lsk_ls, created_at=datetime.now())
             commit()
 
             polo_ls = float(ticker['BTC_LSK']['last'])
@@ -276,13 +327,14 @@ def run_sys():
             lines = "\n".join(output)
             f = open('../prices.txt', 'w')
             f.write(lines)
+            f.close()
             print lines
 
     except Exception,e:
         print str(e)
         return
 
-@db_session
+#@db_session
 def main():
 
     while(1):
