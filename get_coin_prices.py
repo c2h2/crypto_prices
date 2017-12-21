@@ -13,6 +13,15 @@ import threading
 from bson import json_util #need bson and pymongo
 #from multiprocessing.pool import ThreadPool
 
+redis_enabled = True
+
+polo = Poloniex()
+#pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.6.zip
+
+DFT_SLEEP_TIME=0.2
+DFT_HTTP_CONN_TIME=10
+real_mkts_raw_data={}
+mkt_depth={}
 
 #python2
 class timeout:
@@ -27,22 +36,22 @@ class timeout:
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
 
-redis_enabled = True 
 try:
     redis = redis.StrictRedis(host='localhost', port=6379, db=0)
     redis["real_mkts_raw_data"]={}
 except:
     redis_enabled = False
 
-polo = Poloniex()
-#pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.6.zip     
+class CryptoDepthPrice:
+    def __init__(self):
+        mkt_depth["bitx"]={}
+        mkt_depth["polo"]={}
+        mkt_depth["bina"]={}
+        mkt_depth["created_at"] = datetime.now()
+        mkt_depth["updated_at"] = datetime.now()
 
-DFT_SLEEP_TIME=0.2
-DFT_HTTP_CONN_TIME=10
-real_mkts_raw_data={}
 
-
-class CryptoPrice:
+class CryptoTickerPrice:
     def __init__(self):
         #real_mkts_raw_data["jubi"] = {}
         #real_mkts_raw_data["okcn"] = {}
@@ -196,8 +205,7 @@ class CryptoPrice:
             f.close()
             time.sleep(1)
 
-    def multithread_update_prices(self):
-        threads = []
+    def multithread_update_prices(self, threads):
         #threads.append(threading.Thread(target=self.get_jubi))
         #threads.append(threading.Thread(target=self.get_okcoin))
         threads.append(threading.Thread(target=self.get_bittrex))
@@ -208,21 +216,26 @@ class CryptoPrice:
         threads.append(threading.Thread(target=self.get_binance))
         threads.append(threading.Thread(target=self.print_mkt))
 
-        for t in threads:
-            t.daemon=True
-            t.start()
-
-        #keep main thread live
-        while True: 
-            time.sleep(1)
-
-        for t in threads:
-            t.join()
-
 
 
 #db.generate_mapping(create_tables=True)
-#main()
+def main():
+    threads=[]
 
-pf=CryptoPrice()
-pf.multithread_update_prices()
+    ctp=CryptoTickerPrice()
+    ctp.multithread_update_prices(threads)
+
+    for t in threads:
+        t.daemon = True
+        t.start()
+
+    # keep main thread live
+    while True:
+        time.sleep(1)
+
+    for t in threads:
+        t.join()
+
+
+
+main()
