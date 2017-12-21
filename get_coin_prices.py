@@ -11,7 +11,8 @@ from datetime import datetime
 from poloniex import Poloniex
 import threading
 from bson import json_util #need bson and pymongo
-#from multiprocessing.pool import ThreadPool
+
+#python2
 
 redis_enabled = True
 
@@ -23,7 +24,7 @@ DFT_HTTP_CONN_TIME=10
 real_mkts_raw_data={}
 mkt_depth={}
 
-#python2
+##add timeout class
 class timeout:
     def __init__(self, seconds=1, error_message='Timeout'):
         self.seconds = seconds
@@ -36,19 +37,66 @@ class timeout:
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
 
+##init redis
 try:
     redis = redis.StrictRedis(host='localhost', port=6379, db=0)
     redis["real_mkts_raw_data"]={}
+    redis["mkt_depth"]={}
 except:
     redis_enabled = False
 
 class CryptoDepthPrice:
     def __init__(self):
-        mkt_depth["bitx"]={}
-        mkt_depth["polo"]={}
-        mkt_depth["bina"]={}
+        mkt_depth["bitx_lsk"]={}
+        mkt_depth["polo_lsk"]={}
+        mkt_depth["bina_lsk"]={}
         mkt_depth["created_at"] = datetime.now()
         mkt_depth["updated_at"] = datetime.now()
+
+    def update_ts(self):
+        mkt_depth["updated_at"] = datetime.now()
+        if (redis_enabled):
+            redis.set("mkt_depth", mkt_depth)
+
+    def get_polo_lsk(self):
+        url = 'https://poloniex.com/public?command=returnOrderBook&currencyPair=BTC_LSK&depth=100'
+        http = requests.Session()
+        while (True):
+            try:
+                # with timeout(seconds=DFT_HTTP_CONN_TIME):
+                data = simplejson.loads(http.get(url, timeout=DFT_HTTP_CONN_TIME).content)
+                mkt_depth["polo_lsk"] = data
+                mkt_depth["polo_lsk"]["created_at"] = datetime.now()
+                self.update_ts()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+    def get_bitx_lsk(self):
+        url = 'https://bittrex.com/api/v1.1/public/getorderbook?market=BTC-LSK&type=both'
+        http = requests.Session()
+        while (True):
+            try:
+                # with timeout(seconds=DFT_HTTP_CONN_TIME):
+                data = simplejson.loads(http.get(url, timeout=DFT_HTTP_CONN_TIME).content)
+                mkt_depth["bitx_lsk"] = data
+                mkt_depth["bitx_lsk"]["created_at"] = datetime.now()
+                self.update_ts()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+
+    def multithread_update_prices(self, threads):
+        #threads.append(threading.Thread(target=self.get_jubi))
+        #threads.append(threading.Thread(target=self.get_okcoin))
+        threads.append(threading.Thread(target=self.get_bitx_lsk))
+        #threads.append(threading.Thread(target=self.get_acx))
+        threads.append(threading.Thread(target=self.get_polo_lsk))
+        #threads.append(threading.Thread(target=self.get_bitfinex))
+        #threads.append(threading.Thread(target=self.get_bithumb))
+        #threads.append(threading.Thread(target=self.get_binance))
+        #threads.append(threading.Thread(target=self.print_mkt))
 
 
 class CryptoTickerPrice:
@@ -199,7 +247,7 @@ class CryptoTickerPrice:
 
     def print_mkt(self):
         while(True):
-            print str(real_mkts_raw_data)
+            #print str(real_mkts_raw_data)
             f=open('../prices_json.txt', 'w')
             f.write(json.dumps(real_mkts_raw_data, default=json_util.default))
             f.close()
@@ -224,6 +272,9 @@ def main():
 
     ctp=CryptoTickerPrice()
     ctp.multithread_update_prices(threads)
+
+    cdp=CryptoDepthPrice()
+    cdp.multithread_update_prices(threads)
 
     for t in threads:
         t.daemon = True
