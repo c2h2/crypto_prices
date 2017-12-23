@@ -56,7 +56,7 @@ class CryptoDepthPrice:
     def update_ts(self):
         mkt_depth["updated_at"] = datetime.now()
         if (redis_enabled):
-            redis.set("mkt_depth", mkt_depth)
+            redis.set("mkt_depth", json.dumps(mkt_depth, default=json_util.default))
 
     def get_polo_lsk(self):
         url = 'https://poloniex.com/public?command=returnOrderBook&currencyPair=BTC_LSK&depth=100'
