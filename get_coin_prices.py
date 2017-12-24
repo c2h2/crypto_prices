@@ -19,7 +19,7 @@ redis_enabled = True
 polo = Poloniex()
 #pip install https://github.com/s4w3d0ff/python-poloniex/archive/v0.4.6.zip
 
-DFT_SLEEP_TIME=0.2
+DFT_SLEEP_TIME=0.3
 DFT_HTTP_CONN_TIME=10
 real_mkts_raw_data={}
 mkt_depth={}
@@ -47,9 +47,9 @@ except:
 
 class CryptoDepthPrice:
     def __init__(self):
-        mkt_depth["bitx_lsk"]={}
-        mkt_depth["polo_lsk"]={}
-        mkt_depth["bina_lsk"]={}
+        mkt_depth["bitx"]={}
+        mkt_depth["polo"]={}
+        mkt_depth["bina"]={}
         mkt_depth["created_at"] = datetime.now()
         mkt_depth["updated_at"] = datetime.now()
 
@@ -58,45 +58,61 @@ class CryptoDepthPrice:
         if (redis_enabled):
             redis.set("mkt_depth", json.dumps(mkt_depth, default=json_util.default))
 
-    def get_polo_lsk(self):
-        url = 'https://poloniex.com/public?command=returnOrderBook&currencyPair=BTC_LSK&depth=100'
-        http = requests.Session()
-        while (True):
-            try:
-                # with timeout(seconds=DFT_HTTP_CONN_TIME):
-                data = simplejson.loads(http.get(url, timeout=DFT_HTTP_CONN_TIME).content)
-                mkt_depth["polo_lsk"] = data
-                mkt_depth["polo_lsk"]["created_at"] = datetime.now()
-                self.update_ts()
-                time.sleep(DFT_SLEEP_TIME)
-            except Exception, e:
-                print str(e)
 
     def get_bitx_lsk(self):
-        url = 'https://bittrex.com/api/v1.1/public/getorderbook?market=BTC-LSK&type=both'
+        self._get_bitx("BTC-LSK", "lsk_btc")
+
+    def get_polo_lsk(self):
+        self._get_polo("BTC_LSK", "lsk_btc")
+
+    def get_bina_lsk(self):
+        self._get_bina("LSKBTC", "lsk_btc")
+
+
+    def _get_polo(self, name_url, dict_name):
+        url = 'https://poloniex.com/public?command=returnOrderBook&currencyPair=' + name_url + '&depth=100'
         http = requests.Session()
         while (True):
             try:
-                # with timeout(seconds=DFT_HTTP_CONN_TIME):
                 data = simplejson.loads(http.get(url, timeout=DFT_HTTP_CONN_TIME).content)
-                mkt_depth["bitx_lsk"] = data
-                mkt_depth["bitx_lsk"]["created_at"] = datetime.now()
+                mkt_depth["polo"][dict_name] = data
+                mkt_depth["polo"][dict_name]["created_at"] = datetime.now()
+                self.update_ts()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+    def _get_bitx(self, name_url, dict_name):
+        url = 'https://bittrex.com/api/v1.1/public/getorderbook?market=' + name_url + '&type=both'
+        http = requests.Session()
+        while (True):
+            try:
+                data = simplejson.loads(http.get(url, timeout=DFT_HTTP_CONN_TIME).content)
+                mkt_depth["bitx"][dict_name] = data
+                mkt_depth["bitx"][dict_name]["created_at"] = datetime.now()
+                self.update_ts()
+                time.sleep(DFT_SLEEP_TIME)
+            except Exception, e:
+                print str(e)
+
+    def _get_bina(self, name_url, dict_name):
+        url = 'https://api.binance.com/api/v1/depth?symbol=' + name_url
+        http = requests.Session()
+        while (True):
+            try:
+                data = simplejson.loads(http.get(url, timeout=DFT_HTTP_CONN_TIME).content)
+                mkt_depth["bina"][dict_name] = data
+                mkt_depth["bina"][dict_name]["created_at"] = datetime.now()
                 self.update_ts()
                 time.sleep(DFT_SLEEP_TIME)
             except Exception, e:
                 print str(e)
 
 
-    def multithread_update_prices(self, threads):
-        #threads.append(threading.Thread(target=self.get_jubi))
-        #threads.append(threading.Thread(target=self.get_okcoin))
+    def multithread_update_depth(self, threads):
         threads.append(threading.Thread(target=self.get_bitx_lsk))
-        #threads.append(threading.Thread(target=self.get_acx))
         threads.append(threading.Thread(target=self.get_polo_lsk))
-        #threads.append(threading.Thread(target=self.get_bitfinex))
-        #threads.append(threading.Thread(target=self.get_bithumb))
-        #threads.append(threading.Thread(target=self.get_binance))
-        #threads.append(threading.Thread(target=self.print_mkt))
+        threads.append(threading.Thread(target=self.get_bina_lsk))
 
 
 class CryptoTickerPrice:
@@ -274,7 +290,7 @@ def main():
     ctp.multithread_update_prices(threads)
 
     cdp=CryptoDepthPrice()
-    cdp.multithread_update_prices(threads)
+    cdp.multithread_update_depth(threads)
 
     for t in threads:
         t.daemon = True
