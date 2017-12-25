@@ -12,6 +12,7 @@ from poloniex import Poloniex
 import threading
 from bson import json_util #need bson and pymongo
 #from multiprocessing.pool import ThreadPool
+from asciimatics.screen import Screen
 
 
 
@@ -65,6 +66,17 @@ class MarketCalculator:
 
             time.sleep(0.02)
 
+    def order_book_view(self, symbol, _mkts, amt=0):
+        if amt!=0:
+            self.group_order_book(symbol,_mkts,amt)
+            key = symbol+str(amt)
+        else:
+            key = symbol
+
+        for mkt in _mkts:
+            #screen.print_at('Hello world!', 0, 0)
+
+
     def group_order_book(self, symbol, _mkts, amt=1): #amt is amount of first coin
         for mkt in _mkts:
             order_book=self.mkts[mkt][symbol]
@@ -116,7 +128,7 @@ class MarketCalculator:
         self.format_polo(symbol, data)
         self.format_bina(symbol, data)
         redis.set("mkt_fmt_depth", json.dumps(self.mkts, default=json_util.default))
-        self.group_order_book("lsk_btc",["bitx","polo","bina"])
+        self.order_book_view("lsk_btc",["bitx","polo","bina"])
 
     def format_bitx(self, symbol, data):
         bitx_sell_array = data["bitx"][symbol]['result']['sell']
