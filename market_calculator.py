@@ -65,6 +65,44 @@ class MarketCalculator:
 
             time.sleep(0.02)
 
+    def group_order_book(self, symbol, _mkts, amt=1): #amt is amount of first coin
+        for mkt in _mkts:
+            order_book=self.mkts[mkt][symbol]
+            self.mkts[mkt][symbol+str(amt)]={}
+
+            self.mkts[mkt][symbol+str(amt)]["sell"]=[]
+            self.mkts[mkt][symbol+str(amt)]["buy"]=[]
+
+            vol=0.0
+            agg_price=0.0
+            for each_sell in order_book["sell"]:
+                vol += each_sell[1]
+                agg_price += each_sell[0] * each_sell[1]
+                if vol<=amt:
+                    pass
+                else:
+                    self.mkts[mkt][symbol + str(amt)]["sell"].append([round(agg_price/vol, 8), round(vol,1)])
+                    vol=0.0
+                    agg_price=0.0
+
+            for each_buy in order_book["buy"]:
+                vol += each_buy[1]
+                agg_price += each_buy[0] * each_buy[1]
+                if vol <= amt:
+                    pass
+                else:
+                    self.mkts[mkt][symbol + str(amt)]["buy"].append([round(agg_price / vol, 8), round(vol, 1)])
+                    vol = 0.0
+                    agg_price = 0.0
+
+
+            print mkt + " sell"
+            print(self.mkts[mkt][symbol+str(amt)]["sell"])
+
+            print mkt + " buy"
+            print(self.mkts[mkt][symbol+str(amt)]["buy"])
+
+
     def process_new_data(self, data):
         symbol = "lsk_btc"
         if symbol in self.mkts["bitx"]:
@@ -77,9 +115,8 @@ class MarketCalculator:
         self.format_bitx(symbol, data)
         self.format_polo(symbol, data)
         self.format_bina(symbol, data)
-
-        #print self.mkts["bina"]
-
+        redis.set("mkt_fmt_depth", json.dumps(self.mkts, default=json_util.default))
+        self.group_order_book("lsk_btc",["bitx","polo","bina"])
 
     def format_bitx(self, symbol, data):
         bitx_sell_array = data["bitx"][symbol]['result']['sell']
@@ -118,7 +155,7 @@ class MarketCalculator:
         bina_sell_array = data["bina"][symbol]["asks"]
         sells = []
         for sell in bina_sell_array:
-            sells.append([float(sell[0]), sell[1]])
+            sells.append([float(sell[0]), float(sell[1])])
 
         self.mkts["bina"][symbol]["sell"] = sells
 
