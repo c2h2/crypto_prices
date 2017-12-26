@@ -13,7 +13,8 @@ import threading
 from bson import json_util #need bson and pymongo
 #from multiprocessing.pool import ThreadPool
 from asciimatics.screen import Screen
-
+from asciimatics.scene import Scene
+from asciimatics.effects import Cog, Print
 
 
 
@@ -73,20 +74,43 @@ class MarketCalculator:
         else:
             key = symbol
 
+        sell_array_lens=[]
+        buy_array_lens=[]
+
+        for mkt in _mkts:
+            sell_array_lens.append(len(self.mkts[mkt][key]["sell"]))
+            buy_array_lens.append( len(self.mkts[mkt][key]["buy"] ))
+
+
+        sep_line_index=max(sell_array_lens)+1
+        self.screen.clear()
+        self.screen.print_at("-"*150, 0, sep_line_index) #hoz line
         i=0
         for mkt in _mkts:
             self.screen.print_at(mkt, i*50, 0)
             j=0
             sells = self.mkts[mkt][key]["sell"]
             sells.sort(key=lambda x: float(x[0]), reverse=True)
+            offset = max(sell_array_lens)-len(self.mkts[mkt][key]["sell"])
             for sell in sells:
-                self.screen.print_at(str(round(sell[0], 8)), i * 50, 1+j)
-                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 15, 1+j)
+                self.screen.print_at("S " + str(round(sell[0], 8)), i * 50, 1+j + offset,  colour=3) #price
+                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 15, 1+j + offset) #amount
                 j+=1
 
-            i+=1
+
+            buys = self.mkts[mkt][key]["buy"]
+            buys.sort(key=lambda x: float(x[0]), reverse=True)
+            j=0
+            for buy in buys:
+                self.screen.print_at("B " + str(round(buy[0], 8)), i * 50, sep_line_index + j+1, colour=2)  # price
+                self.screen.print_at(str(round(buy[1], 8)), i * 50 + 15, sep_line_index + j+1)  # amount
+                j += 1
+
+            i += 1
 
         self.screen.refresh()
+        time.sleep(2)
+
 
 
     def group_order_book(self, symbol, _mkts, amt=1): #amt is amount of first coin
@@ -109,6 +133,8 @@ class MarketCalculator:
                     vol=0.0
                     agg_price=0.0
 
+            vol = 0.0
+            agg_price = 0.0
             for each_buy in order_book["buy"]:
                 vol += each_buy[1]
                 agg_price += each_buy[0] * each_buy[1]
