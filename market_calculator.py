@@ -41,10 +41,10 @@ class Market:
 
 
 class MarketCalculator:
-    def __init__(self):
+    def __init__(self, _screen):
+        self.screen = _screen
         self.init_mkt()
         self.fetch_redis()
-
 
     def init_mkt(self):
         self.mkts = {}
@@ -73,8 +73,20 @@ class MarketCalculator:
         else:
             key = symbol
 
+        i=0
         for mkt in _mkts:
-            #screen.print_at('Hello world!', 0, 0)
+            self.screen.print_at(mkt, i*50, 0)
+            j=0
+            sells = self.mkts[mkt][key]["sell"]
+            sells.sort(key=lambda x: float(x[0]), reverse=True)
+            for sell in sells:
+                self.screen.print_at(str(round(sell[0], 8)), i * 50, 1+j)
+                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 15, 1+j)
+                j+=1
+
+            i+=1
+
+        self.screen.refresh()
 
 
     def group_order_book(self, symbol, _mkts, amt=1): #amt is amount of first coin
@@ -108,12 +120,6 @@ class MarketCalculator:
                     agg_price = 0.0
 
 
-            print mkt + " sell"
-            print(self.mkts[mkt][symbol+str(amt)]["sell"])
-
-            print mkt + " buy"
-            print(self.mkts[mkt][symbol+str(amt)]["buy"])
-
 
     def process_new_data(self, data):
         symbol = "lsk_btc"
@@ -128,7 +134,7 @@ class MarketCalculator:
         self.format_polo(symbol, data)
         self.format_bina(symbol, data)
         redis.set("mkt_fmt_depth", json.dumps(self.mkts, default=json_util.default))
-        self.order_book_view("lsk_btc",["bitx","polo","bina"])
+        self.order_book_view("lsk_btc",["bitx","polo","bina"],100)
 
     def format_bitx(self, symbol, data):
         bitx_sell_array = data["bitx"][symbol]['result']['sell']
@@ -178,8 +184,10 @@ class MarketCalculator:
 
         self.mkts["bina"][symbol]["buy"] = buys
 
+def run_screen(screen):
+    MarketCalculator(screen)
 
-def main():
-    mc = MarketCalculator()
 
-main()
+if __name__ == "__main__":
+    Screen.wrapper(run_screen)
+
