@@ -12,12 +12,13 @@ from poloniex import Poloniex
 import threading
 from bson import json_util #need bson and pymongo
 #from multiprocessing.pool import ThreadPool
+
 from asciimatics.screen import Screen
 from asciimatics.scene import Scene
 from asciimatics.effects import Cog, Print
 
 
-
+use_screen = True
 redis_enabled = True 
 try:
     redis = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -42,7 +43,7 @@ class Market:
 
 
 class MarketCalculator:
-    def __init__(self, _screen):
+    def __init__(self, _screen=None):
         self.screen = _screen
         self.init_mkt()
         self.fetch_redis()
@@ -67,9 +68,32 @@ class MarketCalculator:
 
             time.sleep(0.02)
 
-    def order_book_view(self, symbol, _mkts, amt=0):
+    def merge_order_book(self, symbol, _mkts, amt=0):
         if amt!=0:
-            self.group_order_book(symbol,_mkts,amt)
+            self.group_order_book(symbol, _mkts, amt) #group some small orders
+            key = symbol+str(amt)
+        else:
+            key = symbol
+
+        self.mkts["merged"]={}
+        self.mkts["merged"][key]={}
+        self.mkts["merged"][key]["sell"]=[]
+        self.mkts["merged"][key]["buy"] =[]
+
+        for mkt in _mkts:
+            for _sell in self.mkts[mkt][key]["sell"]:
+                self.mkts["merged"][key]["sell"].append(_sell+[mkt])
+
+            for _buy in self.mkts[mkt][key]["buy"]:
+                self.mkts["merged"][key]["buy"].append(_buy+[mkt])
+
+
+    def view_order_book(self, symbol, _mkts, amt=0):
+        if self.screen==None:
+            return
+
+        if amt!=0:
+            self.group_order_book(symbol,_mkts,amt) #group some small orders
             key = symbol+str(amt)
         else:
             key = symbol
@@ -93,8 +117,12 @@ class MarketCalculator:
             sells.sort(key=lambda x: float(x[0]), reverse=True)
             offset = max(sell_array_lens)-len(self.mkts[mkt][key]["sell"])
             for sell in sells:
-                self.screen.print_at("S " + str(round(sell[0], 8)), i * 50, 1+j + offset,  colour=3) #price
-                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 15, 1+j + offset) #amount
+                _color = (ord(sell[2][0]) + ord(sell[2][1]) + ord(sell[2][2]) + ord(sell[2][3])) % 177
+                self.screen.print_at("S", i * 50, 1+j + offset, colour=2) #sell logo
+                self.screen.print_at(str(round(sell[0], 8)), i * 50+5, 1+j + offset, colour=_color) #price
+                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 20, 1+j + offset, colour=_color) #amount
+                if len(sell)>2: #merged
+                    self.screen.print_at(sell[2], i * 50 + 35, 1 + j + offset, colour=_color)  # market name
                 j+=1
 
 
@@ -102,14 +130,22 @@ class MarketCalculator:
             buys.sort(key=lambda x: float(x[0]), reverse=True)
             j=0
             for buy in buys:
-                self.screen.print_at("B " + str(round(buy[0], 8)), i * 50, sep_line_index + j+1, colour=2)  # price
-                self.screen.print_at(str(round(buy[1], 8)), i * 50 + 15, sep_line_index + j+1)  # amount
+                _color = (ord(buy[2][0]) + ord(buy[2][1]) + ord(buy[2][2]) + ord(buy[2][3])) % 77
+                self.screen.print_at("B", i * 50, sep_line_index + j+1, colour=3)  # sell logo
+                self.screen.print_at(str(round(buy[0], 8)), i * 50+5, sep_line_index + j+1, colour=_color)  # price
+                self.screen.print_at(str(round(buy[1], 8)), i * 50 + 20, sep_line_index + j+1, colour=_color)  # amount
+                if len(buy)>2: #merged
+                    self.screen.print_at(buy[2],  i * 50 + 35, sep_line_index + j+1, colour=_color)  # market name
                 j += 1
 
             i += 1
 
         self.screen.refresh()
         time.sleep(2)
+
+    def view_merged_order_book(self, symbol, amt=''):
+        self.view_order_book(symbol+str(amt), ["merged"])
+
 
 
 
@@ -160,7 +196,14 @@ class MarketCalculator:
         self.format_polo(symbol, data)
         self.format_bina(symbol, data)
         redis.set("mkt_fmt_depth", json.dumps(self.mkts, default=json_util.default))
-        self.order_book_view("lsk_btc",["bitx","polo","bina"],100)
+        #here
+
+        #if merged view:
+        self.merge_order_book("lsk_btc", ["bitx", "polo", "bina"], 100)
+        self.view_merged_order_book("lsk_btc",  100)
+
+        #if single view:
+        # self.view_order_book("lsk_btc", ["bitx", "polo", "bina"], 100)
 
     def format_bitx(self, symbol, data):
         bitx_sell_array = data["bitx"][symbol]['result']['sell']
@@ -215,5 +258,9 @@ def run_screen(screen):
 
 
 if __name__ == "__main__":
-    Screen.wrapper(run_screen)
+    if(use_screen):
+        Screen.wrapper(run_screen)
+    else:
+        MarketCalculator()
+
 
