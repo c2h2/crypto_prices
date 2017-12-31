@@ -89,6 +89,7 @@ class MarketCalculator:
 
 
     def view_order_book(self, symbol, _mkts, amt=0):
+        magic_key=116
         if self.screen==None:
             return
 
@@ -106,36 +107,48 @@ class MarketCalculator:
             buy_array_lens.append( len(self.mkts[mkt][key]["buy"] ))
 
 
-        sep_line_index=max(sell_array_lens)+1
         self.screen.clear()
-        self.screen.print_at("-"*150, 0, sep_line_index) #hoz line
         i=0
         for mkt in _mkts:
             self.screen.print_at(mkt, i*50, 0)
-            j=0
+            j=1
             sells = self.mkts[mkt][key]["sell"]
             sells.sort(key=lambda x: float(x[0]), reverse=True)
-            offset = max(sell_array_lens)-len(self.mkts[mkt][key]["sell"])
-            for sell in sells:
-                _color = (ord(sell[2][0]) + ord(sell[2][1]) + ord(sell[2][2]) + ord(sell[2][3])) % 177
-                self.screen.print_at("S", i * 50, 1+j + offset, colour=2) #sell logo
-                self.screen.print_at(str(round(sell[0], 8)), i * 50+5, 1+j + offset, colour=_color) #price
-                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 20, 1+j + offset, colour=_color) #amount
-                if len(sell)>2: #merged
-                    self.screen.print_at(sell[2], i * 50 + 35, 1 + j + offset, colour=_color)  # market name
-                j+=1
-
+            sells = sells[-30:]
 
             buys = self.mkts[mkt][key]["buy"]
             buys.sort(key=lambda x: float(x[0]), reverse=True)
-            j=0
+            buys = buys[:30]
+
+            for sell in sells:
+                _color = (ord(sell[2][0]) + ord(sell[2][1]) + ord(sell[2][2]) + ord(sell[2][3])) % magic_key
+                self.screen.print_at("S", i * 50, j, colour=2) #sell logo
+                self.screen.print_at(str(round(sell[0], 8)), i * 50+5, j , colour=_color) #price
+                self.screen.print_at(str(round(sell[1], 8)), i * 50 + 20, j, colour=_color) #amount
+                if len(sell)>2: #merged
+                    self.screen.print_at(sell[2], i * 50 + 35, j, colour=_color)  # market name
+                j+=1
+
+            self.screen.print_at("-" * 150, 0, j)  # hoz line
+            price_diff = buys[0][0]/sells[-1][0]
+            p_l = round((price_diff - 1)*100,3)
+            if p_l > 1:
+                string="Buy from " + sells[-1][2] + ", sell from "+buys[0][2]
+            else:
+                string=""
+            self.screen.print_at("p/l: " + str(p_l)+"% " + string , i*50+3, j)
+
+
+
+
+            j+=1
             for buy in buys:
-                _color = (ord(buy[2][0]) + ord(buy[2][1]) + ord(buy[2][2]) + ord(buy[2][3])) % 77
-                self.screen.print_at("B", i * 50, sep_line_index + j+1, colour=3)  # sell logo
-                self.screen.print_at(str(round(buy[0], 8)), i * 50+5, sep_line_index + j+1, colour=_color)  # price
-                self.screen.print_at(str(round(buy[1], 8)), i * 50 + 20, sep_line_index + j+1, colour=_color)  # amount
+                _color = (ord(buy[2][0]) + ord(buy[2][1]) + ord(buy[2][2]) + ord(buy[2][3])) % magic_key
+                self.screen.print_at("B", i * 50, j, colour=3)  # sell logo
+                self.screen.print_at(str(round(buy[0], 8)), i * 50+5,  j, colour=_color)  # price
+                self.screen.print_at(str(round(buy[1], 8)), i * 50 + 20,  j, colour=_color)  # amount
                 if len(buy)>2: #merged
-                    self.screen.print_at(buy[2],  i * 50 + 35, sep_line_index + j+1, colour=_color)  # market name
+                    self.screen.print_at(buy[2],  i * 50 + 35,  j, colour=_color)  # market name
                 j += 1
 
             i += 1
